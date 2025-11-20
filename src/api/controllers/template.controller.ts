@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { TemplateService } from '../../core/template.service';
 import { CreateTemplateDTO, UpdateTemplateDTO } from '../../types/template.types';
+import { TemplateEngineService } from '../../core/template.engine.service';
 
 export class TemplateController {
   private service: TemplateService;
@@ -81,4 +82,39 @@ export class TemplateController {
       }
     }
   };
+
+
+  preview = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const context = req.body;
+
+      const template = await this.service.findById(id);
+      if (!template) {
+        res.status(404).json({ error: 'Template not found' });
+        return;
+      }
+
+      const engineService = new TemplateEngineService();
+      const result = engineService.processTemplate(
+        template.subject,
+        template.body,
+        context
+      );
+
+      res.status(200).json({
+        original: {
+          subject: template.subject,
+          body: template.body,
+        },
+        processed: {
+          subject: result.subject,
+          body: result.body,
+        },
+        missingVariables: result.missingVariables,
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
 }
