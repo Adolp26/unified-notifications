@@ -39,4 +39,12 @@ router.put('/:id', controller.update);
  */
 router.delete('/:id', controller.delete);
 
+/**
+ * @route   POST /api/v1/templates/:id/preview
+ * @desc    Preview template with sample data
+ * @access  Public
+ */
+router.post('/:id/preview', controller.preview);
+
+
 export default router;
