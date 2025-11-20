@@ -34,6 +34,7 @@
   "homepage": "https://github.com/Adolp26/unified-notifications#readme",
   "devDependencies": {
     "@types/express": "^5.0.5",
+    "@types/handlebars": "^4.0.40",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
@@ -50,6 +51,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "handlebars": "^4.7.8",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.27"
