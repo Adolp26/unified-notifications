@@ -6,7 +6,7 @@ jest.mock('bull');
 describe('QueueService', () => {
   let service: QueueService;
   let mockQueue: any;
-
+    
   beforeEach(() => {
     (QueueService as any).instance = undefined;
 
