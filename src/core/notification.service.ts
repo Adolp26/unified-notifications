@@ -39,9 +39,6 @@ export class NotificationService {
     this.queueService = QueueService.getInstance();
   }
 
-  /**
-   * Prepara template e valida variáveis
-   */
   async prepare(dto: SendNotificationDTO): Promise<ProcessedNotification> {
     const template = await this.templateRepository.findOne({
       where: { name: dto.templateName },
@@ -88,9 +85,6 @@ export class NotificationService {
     };
   }
 
-  /**
-   * Validação simples antes de enviar
-   */
   async validate(dto: SendNotificationDTO) {
     const errors: string[] = [];
 
@@ -131,21 +125,17 @@ export class NotificationService {
     };
   }
 
-  /**
-   * Enfileira notificação normal ou agendada
-   */
+
   async send(dto: SendNotificationDTO): Promise<{
     jobId: string;
     status: string;
     queuedAt: Date;
   }> {
-    // 1. Validar antes de enfileirar
     const validation = await this.validate(dto);
     if (!validation.valid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
     }
 
-    // Buscar template
     const template = await this.templateRepository.findOne({
       where: { name: dto.templateName },
     });
@@ -156,13 +146,13 @@ export class NotificationService {
 
     const channels = dto.channels || [template.channel];
 
-    // Função util para gerar IDs únicos
+    // Útil para gerar IDs únicos
     const generateId = () =>
       `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
 
     let jobs;
 
-    // 2. Se for agendado, usa scheduleNotification
+    // Se for agendado, usa scheduleNotification
     if (dto.scheduledFor) {
       jobs = await Promise.all(
         channels.map((channel) =>
@@ -187,7 +177,7 @@ export class NotificationService {
       };
     }
 
-    // 3. Caso normal, addNotification
+    // Caso normal, addNotification
     jobs = await Promise.all(
       channels.map((channel) =>
         this.queueService.addNotification({
