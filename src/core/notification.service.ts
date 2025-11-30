@@ -2,6 +2,7 @@ import { AppDataSource } from '../config/database.config';
 import { Template } from '../database/entities/template.entity';
 import { TemplateEngineService } from './template.engine.service';
 import { Repository } from 'typeorm';
+import { QueueService } from './queue.service';
 
 export interface SendNotificationDTO {
   templateName: string;
@@ -30,36 +31,33 @@ export interface ProcessedNotification {
 export class NotificationService {
   private templateRepository: Repository<Template>;
   private templateEngine: TemplateEngineService;
+  private queueService: QueueService;
 
   constructor() {
     this.templateRepository = AppDataSource.getRepository(Template);
     this.templateEngine = new TemplateEngineService();
+    this.queueService = QueueService.getInstance();
   }
 
   /**
-   * Prepara uma notificação para envio
+   * Prepara template e valida variáveis
    */
   async prepare(dto: SendNotificationDTO): Promise<ProcessedNotification> {
-
     const template = await this.templateRepository.findOne({
       where: { name: dto.templateName },
     });
 
-    if (!template) {
-      throw new Error(`Template "${dto.templateName}" not found`);
-    }
+    if (!template) throw new Error(`Template "${dto.templateName}" not found`);
 
     const channels = dto.channels || [template.channel];
+
     if (!channels.includes(template.channel)) {
       throw new Error(
         `Template channel "${template.channel}" not in requested channels`
       );
     }
 
-    const context = {
-      ...dto.recipient,
-      ...dto.data,
-    };
+    const context = { ...dto.recipient, ...dto.data };
 
     const missingVars = this.templateEngine.getMissingVariables(
       template.subject,
@@ -69,9 +67,7 @@ export class NotificationService {
     );
 
     if (missingVars.length > 0) {
-      throw new Error(
-        `Missing required variables: ${missingVars.join(', ')}`
-      );
+      throw new Error(`Missing required variables: ${missingVars.join(', ')}`);
     }
 
     const processed = this.templateEngine.processTemplate(
@@ -93,12 +89,9 @@ export class NotificationService {
   }
 
   /**
-   * Valida se uma notificação pode ser enviada
+   * Validação simples antes de enviar
    */
-  async validate(dto: SendNotificationDTO): Promise<{
-    valid: boolean;
-    errors: string[];
-  }> {
+  async validate(dto: SendNotificationDTO) {
     const errors: string[] = [];
 
     const template = await this.templateRepository.findOne({
@@ -111,9 +104,11 @@ export class NotificationService {
     }
 
     const channels = dto.channels || [template.channel];
+
     if (channels.includes('email') && !dto.recipient.email) {
       errors.push('Email channel requires recipient.email');
     }
+
     if (channels.includes('sms') && !dto.recipient.phone) {
       errors.push('SMS channel requires recipient.phone');
     }
@@ -133,6 +128,83 @@ export class NotificationService {
     return {
       valid: errors.length === 0,
       errors,
+    };
+  }
+
+  /**
+   * Enfileira notificação normal ou agendada
+   */
+  async send(dto: SendNotificationDTO): Promise<{
+    jobId: string;
+    status: string;
+    queuedAt: Date;
+  }> {
+    // 1. Validar antes de enfileirar
+    const validation = await this.validate(dto);
+    if (!validation.valid) {
+      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    }
+
+    // Buscar template
+    const template = await this.templateRepository.findOne({
+      where: { name: dto.templateName },
+    });
+
+    if (!template) {
+      throw new Error(`Template "${dto.templateName}" not found`);
+    }
+
+    const channels = dto.channels || [template.channel];
+
+    // Função util para gerar IDs únicos
+    const generateId = () =>
+      `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+
+    let jobs;
+
+    // 2. Se for agendado, usa scheduleNotification
+    if (dto.scheduledFor) {
+      jobs = await Promise.all(
+        channels.map((channel) =>
+          this.queueService.scheduleNotification(
+            {
+              id: generateId(),
+              templateName: dto.templateName,
+              recipient: dto.recipient,
+              data: dto.data,
+              channel,
+              priority: dto.priority,
+            },
+            dto.scheduledFor!
+          )
+        )
+      );
+
+      return {
+        jobId: jobs[0].id.toString(),
+        status: 'scheduled',
+        queuedAt: new Date(),
+      };
+    }
+
+    // 3. Caso normal, addNotification
+    jobs = await Promise.all(
+      channels.map((channel) =>
+        this.queueService.addNotification({
+          id: generateId(),
+          templateName: dto.templateName,
+          recipient: dto.recipient,
+          data: dto.data,
+          channel,
+          priority: dto.priority,
+        })
+      )
+    );
+
+    return {
+      jobId: jobs[0].id.toString(),
+      status: 'queued',
+      queuedAt: new Date(),
     };
   }
 }
