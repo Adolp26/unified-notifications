@@ -5,9 +5,6 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org)
-
-[Demo Live](#) | [Documentação](#) | [Report Bug](https://github.com/seu-usuario/unified-notifications/issues) | [Request Feature](https://github.com/seu-usuario/unified-notifications/issues)
 
 ---
 
