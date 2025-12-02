@@ -556,19 +556,15 @@ unified-notifications/
 # Server
 PORT=3000
 
-# Database
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/notifications
 
-# Redis
 REDIS_URL=redis://localhost:6379
 
-# Email (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=seu-email@gmail.com
 SMTP_PASS=sua-app-password  # Use App Password do Gmail!
 
-# Email From
 EMAIL_FROM_NAME=Unified Notifications
 EMAIL_FROM_ADDRESS=noreply@yourapp.com
 ```
