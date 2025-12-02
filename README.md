@@ -1,2 +1,5 @@
 # unified-notifications
-Multichannel notification system with support for templates, automatic repetition, user options, and full observability.
+
+# Sobre o Projeto
+
+Sistema de notificações multi-canal para aprender arquitetura de software escalável na prática.
