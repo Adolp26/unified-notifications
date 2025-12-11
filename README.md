@@ -3,8 +3,7 @@
 > Sistema de notificações multi-canal escalável com filas, retry automático e cobertura de testes
 
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 
 ---
 
